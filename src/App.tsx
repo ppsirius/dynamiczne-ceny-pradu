@@ -252,7 +252,7 @@ function App() {
         <p>
           Data source:{" "}
           <a
-            href="https://raporty.pse.pl/"
+            href="https://raporty.pse.pl/index.html?report=RCE-PLN&state=Funkcjonowanie%20KSE,Funkcjonowanie%20RB,Raporty%20dobowe%20z%20funkcjonowania%20RB,Podstawowe%20wska%C5%BAniki%20cenowe%20i%20kosztowe&date=2024-08-25&type=table&search=&"
             className="text-blue-400 hover:text-blue-300"
             target="_blank"
             rel="noopener noreferrer"
