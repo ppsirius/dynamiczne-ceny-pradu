@@ -136,7 +136,7 @@ function App() {
     }),
     datasets: [
       {
-        label: "PLN",
+        label: "PLN / MWh",
         data: processedData.map((d) => d.rce_pln),
         backgroundColor: "rgba(59, 130, 246, 0.5)",
         borderColor: "rgb(59, 130, 246)",
@@ -169,7 +169,7 @@ function App() {
       tooltip: {
         callbacks: {
           label: function (context: { parsed: { y: number } }) {
-            return `Cena: ${context.parsed.y.toFixed(2)} PLN`;
+            return `Cena: ${context.parsed.y.toFixed(2)} PLN / MWh`;
           },
           title: function (tooltipItems: { dataIndex: number }[]) {
             if (tooltipItems.length === 0) return "";
