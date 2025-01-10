@@ -248,6 +248,29 @@ function App() {
           )}
         </div>
       </div>
+      <footer className="container mx-auto px-4 py-4 text-gray-400 text-sm text-center">
+        <p>
+          Data source:{" "}
+          <a
+            href="https://raporty.pse.pl/"
+            className="text-blue-400 hover:text-blue-300"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            raporty.pse.pl
+          </a>
+        </p>
+        <p>
+          © {new Date().getFullYear()}{" "}
+          <a
+            href="https://jakbyco.com/"
+            className="text-blue-400 hover:text-blue-300"
+            target="_blank"
+          >
+            jakbyco.com
+          </a>
+        </p>
+      </footer>
     </div>
   );
 }
