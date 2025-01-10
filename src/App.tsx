@@ -46,6 +46,7 @@ function App() {
         );
         if (!response.ok) throw new Error('Failed to fetch data');
         const data: DataStructure = await response.json();
+        console.log("Raw API response:", data.value.slice(0, 3));
         setData(data.value);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -59,39 +60,48 @@ function App() {
 
   const processedData = useMemo(() => {
     // Validate and filter data
-    const validData = data.filter(point => {
-      return point.udtczas && typeof point.rce_pln === 'number';
+    const validData = data.filter((point) => {
+      const isValid = point.udtczas && typeof point.rce_pln === "number";
+      if (!isValid) {
+        console.log("Invalid data point:", point);
+      }
+      return isValid;
     });
 
-    console.log('Valid data points:', validData.length);
+    console.log("Valid data points:", validData.length);
+    console.log("First few valid data points:", validData.slice(0, 3));
 
     // For 15min period, return sorted data
-    if (selectedPeriod === '15min') {
+    if (selectedPeriod === "15min") {
       return [...validData].sort((a, b) => {
-        const timeA = a.udtczas.split(':').map(Number);
-        const timeB = b.udtczas.split(':').map(Number);
+        const timeA = a.udtczas.split(":").map(Number);
+        const timeB = b.udtczas.split(":").map(Number);
         if (timeA.length !== 2 || timeB.length !== 2) return 0;
-        return (timeA[0] * 60 + timeA[1]) - (timeB[0] * 60 + timeB[1]);
+        return timeA[0] * 60 + timeA[1] - (timeB[0] * 60 + timeB[1]);
       });
     }
 
     // Group data by hour for 1h periods
     const hourlyGroups: { [key: string]: number[] } = {};
-    
-    validData.forEach(point => {
-      const timeParts = point.udtczas.split(':');
-      if (timeParts.length !== 2) return;
 
-      const hour = timeParts[0].padStart(2, '0');
+    console.log("Processing data for hourly groups:", validData);
+
+    validData.forEach((point) => {
+      const timeParts = point.udtczas.split(":");
+      // Handle both HH:mm and HH:mm:ss formats
+      if (timeParts.length < 2) return;
+
+      const hour = timeParts[0].padStart(2, "0");
       const hourKey = `${selectedDate} ${hour}:00`;
-      
+
       if (!hourlyGroups[hourKey]) {
         hourlyGroups[hourKey] = [];
       }
       hourlyGroups[hourKey].push(point.rce_pln);
+      console.log(`Added price ${point.rce_pln} to hour ${hourKey}`);
     });
 
-    console.log('Hourly groups:', hourlyGroups);
+    console.log("Hourly groups:", hourlyGroups);
 
     // Calculate averages and sort by hour
     return Object.entries(hourlyGroups)
@@ -101,7 +111,8 @@ function App() {
         return dateA.getTime() - dateB.getTime();
       })
       .map(([hourKey, prices]) => {
-        const avgPrice = prices.reduce((sum, price) => sum + price, 0) / prices.length;
+        const avgPrice =
+          prices.reduce((sum, price) => sum + price, 0) / prices.length;
         return {
           udtczas_oreb: hourKey,
           rce_pln: Number(avgPrice.toFixed(2)),
@@ -114,17 +125,17 @@ function App() {
   }, [data, selectedPeriod, selectedDate]);
 
   const chartData = {
-    labels: processedData.map(d => {
+    labels: processedData.map((d) => {
       // Extract only the time part for display
-      const parts = d.udtczas_oreb.split(' ');
+      const parts = d.udtczas_oreb.split(" ");
       return parts.length > 1 ? parts[1] : d.udtczas_oreb;
     }),
     datasets: [
       {
-        label: 'RCE (PLN)',
-        data: processedData.map(d => d.rce_pln),
-        backgroundColor: 'rgba(59, 130, 246, 0.5)',
-        borderColor: 'rgb(59, 130, 246)',
+        label: "RCE (PLN)",
+        data: processedData.map((d) => d.rce_pln),
+        backgroundColor: "rgba(59, 130, 246, 0.5)",
+        borderColor: "rgb(59, 130, 246)",
         borderWidth: 1,
       },
     ],
@@ -135,54 +146,57 @@ function App() {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: 'top' as const,
+        position: "top" as const,
         labels: {
-          color: '#e5e7eb',
+          color: "#e5e7eb",
         },
       },
       title: {
         display: true,
-        text: `Rynkowe ceny dynamiczne PSE (${selectedPeriod === '15min' ? '15 minut' : '1 godzina'})`,
-        color: '#e5e7eb',
+        text: `Rynkowe ceny dynamiczne PSE (${
+          selectedPeriod === "15min" ? "15 minut" : "1 godzina"
+        })`,
+        color: "#e5e7eb",
         font: {
           size: 16,
-          weight: 'bold' as const,
+          weight: "bold" as const,
         },
       },
       tooltip: {
         callbacks: {
-          label: function(context: { parsed: { y: number } }) {
+          label: function (context: { parsed: { y: number } }) {
             return `Cena: ${context.parsed.y.toFixed(2)} PLN`;
           },
-          title: function(tooltipItems: [{ dataIndex: number }]) {
+          title: function (tooltipItems: any[]) {
+            if (tooltipItems.length === 0) return "";
             const index = tooltipItems[0].dataIndex;
-            return `Czas: ${processedData[index]?.udtczas_oreb || ''}`;
-          }
-        }
-      }
+            return `Czas: ${processedData[index]?.udtczas_oreb || ""}`;
+          },
+        },
+      },
     },
     scales: {
       x: {
-        type: 'category' as const,
+        type: "category" as const,
         ticks: {
-          color: '#e5e7eb',
+          color: "#e5e7eb",
           maxRotation: 45,
-          minRotation: 45
+          minRotation: 45,
         },
         grid: {
-          color: 'rgba(255, 255, 255, 0.1)',
+          color: "rgba(255, 255, 255, 0.1)",
         },
       },
       y: {
-        type: 'linear' as const,
+        type: "linear" as const,
         ticks: {
-          color: '#e5e7eb',
-          callback: function(value: number) {
+          color: "#e5e7eb",
+          callback: function (value: number) {
             return `${value.toFixed(2)} PLN`;
-          }
+          },
         },
         grid: {
-          color: 'rgba(255, 255, 255, 0.1)',
+          color: "rgba(255, 255, 255, 0.1)",
         },
       },
     },
