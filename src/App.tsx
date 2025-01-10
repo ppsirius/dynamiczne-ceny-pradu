@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Bar } from 'react-chartjs-2';
+import { useState, useEffect, useMemo } from "react";
+import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -8,12 +8,12 @@ import {
   Title,
   Tooltip,
   Legend,
-} from 'chart.js';
-import { format } from 'date-fns';
-import { DatePicker } from './components/DatePicker';
-import { PeriodPicker, type Period } from './components/PeriodPicker';
-import type { DataStructure, DataPoint } from './types/data';
-import { LineChart } from 'lucide-react';
+} from "chart.js";
+import { format } from "date-fns";
+import { DatePicker } from "./components/DatePicker";
+import { PeriodPicker, type Period } from "./components/PeriodPicker";
+import type { DataStructure, DataPoint } from "./types/data";
+import { LineChart } from "lucide-react";
 
 ChartJS.register(
   CategoryScale,
@@ -26,14 +26,16 @@ ChartJS.register(
 
 function App() {
   const [data, setData] = useState<DataPoint[]>([]);
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [selectedPeriod, setSelectedPeriod] = useState<Period>('1h');
+  const [selectedDate, setSelectedDate] = useState(
+    format(new Date(), "yyyy-MM-dd")
+  );
+  const [selectedPeriod, setSelectedPeriod] = useState<Period>("1h");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Set dark theme by default
   useEffect(() => {
-    document.documentElement.classList.add('dark');
+    document.documentElement.classList.add("dark");
   }, []);
 
   useEffect(() => {
@@ -44,12 +46,12 @@ function App() {
         const response = await fetch(
           `https://api.raporty.pse.pl/api/rce-pln?$filter=business_date%20eq%20'${selectedDate}'`
         );
-        if (!response.ok) throw new Error('Failed to fetch data');
+        if (!response.ok) throw new Error("Failed to fetch data");
         const data: DataStructure = await response.json();
-        console.log("Raw API response:", data.value.slice(0, 3));
+
         setData(data.value);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        setError(err instanceof Error ? err.message : "An error occurred");
       } finally {
         setLoading(false);
       }
@@ -68,9 +70,6 @@ function App() {
       return isValid;
     });
 
-    console.log("Valid data points:", validData.length);
-    console.log("First few valid data points:", validData.slice(0, 3));
-
     // For 15min period, return sorted data
     if (selectedPeriod === "15min") {
       return [...validData].sort((a, b) => {
@@ -84,8 +83,6 @@ function App() {
     // Group data by hour for 1h periods
     const hourlyGroups: { [key: string]: number[] } = {};
 
-    console.log("Processing data for hourly groups:", validData);
-
     validData.forEach((point) => {
       const timeParts = point.udtczas.split(":");
       // Handle both HH:mm and HH:mm:ss formats
@@ -98,10 +95,7 @@ function App() {
         hourlyGroups[hourKey] = [];
       }
       hourlyGroups[hourKey].push(point.rce_pln);
-      console.log(`Added price ${point.rce_pln} to hour ${hourKey}`);
     });
-
-    console.log("Hourly groups:", hourlyGroups);
 
     // Calculate averages and sort by hour
     return Object.entries(hourlyGroups)
@@ -128,11 +122,21 @@ function App() {
     labels: processedData.map((d) => {
       // Extract only the time part for display
       const parts = d.udtczas_oreb.split(" ");
-      return parts.length > 1 ? parts[1] : d.udtczas_oreb;
+      const timePart = parts.length > 1 ? parts[1] : d.udtczas_oreb;
+      // For 1h period, show only hour
+      if (selectedPeriod === "1h") {
+        const cleanDateString = d.udtczas_oreb.slice(-16);
+
+        const date = new Date(cleanDateString);
+
+        const hour = format(date, "HH:mm");
+        return hour;
+      }
+      return timePart;
     }),
     datasets: [
       {
-        label: "RCE (PLN)",
+        label: "PLN",
         data: processedData.map((d) => d.rce_pln),
         backgroundColor: "rgba(59, 130, 246, 0.5)",
         borderColor: "rgb(59, 130, 246)",
@@ -167,7 +171,7 @@ function App() {
           label: function (context: { parsed: { y: number } }) {
             return `Cena: ${context.parsed.y.toFixed(2)} PLN`;
           },
-          title: function (tooltipItems: any[]) {
+          title: function (tooltipItems: { dataIndex: number }[]) {
             if (tooltipItems.length === 0) return "";
             const index = tooltipItems[0].dataIndex;
             return `Czas: ${processedData[index]?.udtczas_oreb || ""}`;
@@ -191,8 +195,8 @@ function App() {
         type: "linear" as const,
         ticks: {
           color: "#e5e7eb",
-          callback: function (value: number) {
-            return `${value.toFixed(2)} PLN`;
+          callback: function (value: string | number) {
+            return `${Number(value).toFixed(2)} PLN`;
           },
         },
         grid: {
@@ -213,8 +217,14 @@ function App() {
             </h1>
           </div>
           <div className="flex items-center gap-4">
-            <PeriodPicker selectedPeriod={selectedPeriod} onPeriodChange={setSelectedPeriod} />
-            <DatePicker selectedDate={selectedDate} onDateChange={setSelectedDate} />
+            <PeriodPicker
+              selectedPeriod={selectedPeriod}
+              onPeriodChange={setSelectedPeriod}
+            />
+            <DatePicker
+              selectedDate={selectedDate}
+              onDateChange={setSelectedDate}
+            />
           </div>
         </div>
 
